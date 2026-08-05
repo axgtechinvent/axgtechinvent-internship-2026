@@ -1,0 +1,11 @@
+.aws/
+*.tfvars
+*.tfstate*
+.env
+*.pyc
+.venv/
+venv/
+uploads/*
+!uploads/.gitkeep
+.vscode/
+.idea/
