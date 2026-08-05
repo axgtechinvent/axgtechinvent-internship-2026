@@ -1,5 +1,13 @@
+.aws/
+*.tfvars
+*.tfstate*
+.env
+*.pyc
+.venv/
+venv/
+uploads/*
+!uploads/.gitkeep
+.vscode/
+.idea/
 .vs/
 __pycache__/
-*.pyc
-.env
-venv/

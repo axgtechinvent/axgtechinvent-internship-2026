@@ -7,3 +7,6 @@ venv/
 .vscode/
 .idea/
 README.md
+uploads/*
+!uploads/.gitkeep
+docs/
