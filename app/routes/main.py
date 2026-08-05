@@ -1,10 +1,3 @@
-"""
-Core routes. Currently just the landing page.
-
-File upload/list/download/delete routes will be added here in later
-tasks, once S3 integration is ready. This file stays deliberately
-thin for now.
-"""
 from flask import Blueprint, current_app, render_template
 
 main_bp = Blueprint("main", __name__)

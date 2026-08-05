@@ -1,12 +1,3 @@
-"""
-Basic request logging middleware.
-
-For now this just logs to stdout/stderr using Python's standard
-logging module. Once the app is deployed to EC2, these logs will be
-picked up by the CloudWatch agent -- no code change needed here for
-that to happen, which is why we log through `logging` rather than
-printing directly.
-"""
 import logging
 import time
 

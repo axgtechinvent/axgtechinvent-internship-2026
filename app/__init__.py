@@ -1,10 +1,3 @@
-"""
-Application factory for the Cloud File Storage app.
-
-This file wires together config, routes, and middleware. No business
-logic (S3 upload/download/delete) lives here or anywhere yet -- this
-task is only about the skeleton.
-"""
 from flask import Flask
 
 from app.config.config import get_config
