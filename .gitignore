@@ -2,3 +2,16 @@
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
+.aws/
+*.tfvars
+*.tfstate*
+.env
+*.pyc
+.venv/
+venv/
+uploads/*
+!uploads/.gitkeep
+.vscode/
+.idea/
+.vs/
+__pycache__/
