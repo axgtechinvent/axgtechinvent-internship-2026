@@ -8,12 +8,12 @@ terraform {
 
   #Implementation of the S3 backend
   backend "s3" {
-      bucket         = "my-team-tfstate-bucket-2026"  # Bucket-ul S3 creat
-      key            = "dev/terraform.tfstate"        # Calea din S3 unde se va salva starea
-      region         = "eu-central-1"                 
-      use_lockfile = true        # Tabela pentru locking
-      encrypt        = true                           # Criptarea fișierului pe S3
-    }
+    bucket       = "my-team-tfstate-bucket-2026" # Bucket-ul S3 creat
+    key          = "dev/terraform.tfstate"       # Calea din S3 unde se va salva starea
+    region       = "eu-central-1"
+    use_lockfile = true # Tabela pentru locking
+    encrypt      = true # Criptarea fișierului pe S3
+  }
 }
 
 #Implementation of the AWS Provider
@@ -32,7 +32,7 @@ resource "aws_vpc" "main" { #aws_vpc = Tipul resursei (ce se creează în AWS), 
   enable_dns_hostnames = true
 
   tags = {
-    Name        = "project-vpc"
+    Name        = "project-vpc-dev"
     Environment = "dev"
   }
 }
@@ -45,7 +45,7 @@ resource "aws_subnet" "public_subnet" {
   map_public_ip_on_launch = true # Alocă IP public automat pentru instanțe
 
   tags = {
-    Name = "public-subnet-1a"
+    Name = "public-subnet-1a-dev"
   }
 }
 
@@ -54,7 +54,7 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id # Conectare la VPC
 
   tags = {
-    Name = "main-igw"
+    Name = "igw-dev"
   }
 }
 
@@ -69,7 +69,7 @@ resource "aws_route_table" "public_rt" {
   }
 
   tags = {
-    Name = "public-route-table"
+    Name = "public-route-table-dev"
   }
 }
 
