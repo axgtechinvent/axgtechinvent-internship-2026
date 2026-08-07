@@ -54,7 +54,7 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id # Conectare la VPC
 
   tags = {
-    Name = "igw-dev"
+    Name = "main-igw-dev"
   }
 }
 
@@ -79,5 +79,24 @@ resource "aws_route_table_association" "public_assoc" {
   route_table_id = aws_route_table.public_rt.id
 }
 
+
+# Create ECR repository 
+resource "aws_ecr_repository" "ecr" {
+  name                 = "my-ecr-app-dev"   
+  image_tag_mutability = "IMMUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = {
+    Environment = "dev"
+    ManagedBy   = "terraform"
+  }
+}
 
 
