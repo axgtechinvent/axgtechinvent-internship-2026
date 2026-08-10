@@ -1,30 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 6.0"
-    }
-  }
-
-  #Implementation of the S3 backend
-  backend "s3" {
-    bucket       = "my-team-tfstate-bucket-2026" # Bucket-ul S3 creat
-    key          = "dev/terraform.tfstate"       # Calea din S3 unde se va salva starea
-    region       = "eu-central-1"
-    use_lockfile = true # Tabela pentru locking
-    encrypt      = true # Criptarea fișierului pe S3
-  }
-}
-
-#Implementation of the AWS Provider
-provider "aws" {
-  region = "eu-central-1"
-  default_tags {
-    tags = {
-      ManagedBy = "Terraform"
-    }
-  }
-}
 
 # Create a VPC
 resource "aws_vpc" "main" { #aws_vpc = Tipul resursei (ce se creează în AWS), main_vpc = Numele local
@@ -33,7 +6,7 @@ resource "aws_vpc" "main" { #aws_vpc = Tipul resursei (ce se creează în AWS), 
 
   tags = {
     Name        = "project-vpc-dev"
-    Environment = "dev"
+    Environment = var.environment
   }
 }
 
@@ -79,6 +52,88 @@ resource "aws_route_table_association" "public_assoc" {
   route_table_id = aws_route_table.public_rt.id
 }
 
+# ------------------------------------------------------------------------------
+# SECURITY GROUP & COMPUTE (EC2 & AMI)
+# ------------------------------------------------------------------------------
+
+resource "aws_key_pair" "app_key" {
+  key_name   = "app-server-key-dev"
+  public_key = file(pathexpand(var.public_key_path))
+}
+
+# 1. Definirea Security Group-ului (fara reguli inline)
+resource "aws_security_group" "app_sg" {
+  name        = "app-server-sg-dev"
+  description = "Security Group pentru serverele de aplicatie"
+  vpc_id      = aws_vpc.main.id
+
+  tags = {
+    Name        = "app-sg-dev"
+    Environment = var.environment
+  }
+}
+
+# 2. Regula Inbound HTTP (Permis de oriunde pe portul 80)
+resource "aws_vpc_security_group_ingress_rule" "allow_http" {
+  security_group_id = aws_security_group.app_sg.id
+  description       = "Allow HTTP traffic"
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 80
+  ip_protocol       = "tcp"
+  to_port           = 80
+}
+
+# 3. Regula Inbound SSH 
+resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
+  security_group_id = aws_security_group.app_sg.id
+  description       = "Allow SSH from my IP"
+  cidr_ipv4         = "${var.my_ip}/32"
+  from_port         = 22
+  ip_protocol       = "tcp"
+  to_port           = 22
+}
+
+# 4. Regula Outbound (iesire permisa catre orice destinatie)
+resource "aws_vpc_security_group_egress_rule" "allow_all_outbound" {
+  security_group_id = aws_security_group.app_sg.id
+  description       = "Allow all outbound traffic"
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1" # Toate protocoalele
+}
+# Căutare dinamică pentru cel mai recent AMI de Amazon Linux 2023(resursa de tip data source)
+data "aws_ami" "amazon_linux_2023" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023.*-x86_64"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# Crearea instantei EC2
+resource "aws_instance" "app_server" {
+  ami                         = data.aws_ami.amazon_linux_2023.id
+  instance_type               = "t3.micro" # Free tier eligibil
+  subnet_id                   = aws_subnet.public_subnet.id # Plasare în subnetul public
+  vpc_security_group_ids      = [aws_security_group.app_sg.id] # Atasare Security Group
+  key_name                    = aws_key_pair.app_key.key_name
+  associate_public_ip_address = true # Asigura un IP public
+
+  tags = {
+    Name        = "ec2-app-server-dev"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+# ------------------------------------------------------------------------------
+# ECR REPOSITORY
+# ------------------------------------------------------------------------------
 
 # Create ECR repository 
 resource "aws_ecr_repository" "ecr" {
@@ -94,7 +149,7 @@ resource "aws_ecr_repository" "ecr" {
   }
 
   tags = {
-    Environment = "dev"
+    Environment = var.environment 
     ManagedBy   = "terraform"
   }
 }
