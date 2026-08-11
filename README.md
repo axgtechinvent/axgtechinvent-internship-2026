@@ -46,3 +46,8 @@ După ce instanța este pornită, conectează-te prin SSH folosind cheia privat�
 ssh -i "$env:USERPROFILE\.ssh\id_rsa_aws" ec2-user@IP_PUBLIC_EC2
 
 Când te conectezi prima dată, tastează `yes` și apasă **Enter** pentru a adăuga amprenta serverului în `known_hosts`.
+
+## Pentru a obține cheile de acces generate de Terraform în scopul configurării ulterioare în mediul aplicației sau GitHubSecrets
+
+terraform output -raw iam_access_key_id
+terraform output -raw iam_secret_access_key
