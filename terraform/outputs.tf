@@ -31,3 +31,22 @@ output "s3_bucket_region" {
   description = "Regiunea AWS in care se afla bucket-ul"
   value       = aws_s3_bucket.app_storage.region
 }
+
+#IAM Outputs
+
+output "iam_user_name" {
+  description = "Numele utilizatorului IAM creat pentru aplicatie"
+  value       = aws_iam_user.app_user.name
+}
+
+output "iam_access_key_id" {
+  description = "AWS Access Key ID pentru aplicatie (A se configura in GitHub Secrets)"
+  value       = aws_iam_access_key.app_user_key.id
+  sensitive   = true
+}
+
+output "iam_secret_access_key" {
+  description = "AWS Secret Access Key pentru aplicatie (A se configura in GitHub Secrets)"
+  value       = aws_iam_access_key.app_user_key.secret
+  sensitive   = true
+}

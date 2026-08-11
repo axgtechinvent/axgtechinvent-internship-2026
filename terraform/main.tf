@@ -175,6 +175,75 @@ resource "aws_s3_bucket_versioning" "app_storage_versioning" {
 }
 
 # ------------------------------------------------------------------------------
+# IAM USER, POLICY & ACCESS KEYS 
+# ------------------------------------------------------------------------------
+
+# 1. Creeaza IAM User-ul dedicat aplicatiei
+resource "aws_iam_user" "app_user" {
+  name = "${var.project_name}-s3-user-${var.environment}"
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "terraform"
+  }
+}
+
+# 2. Generam documentul de politica IAM urmand principiul Least Privilege
+data "aws_iam_policy_document" "s3_app_policy_doc" {
+  # Permisiuni la nivel de Bucket (listare continut)
+  statement {
+    sid    = "AllowS3BucketListing"
+    effect = "Allow"
+    actions = [
+      "s3:ListBucket",
+      "s3:GetBucketLocation"
+    ]
+    resources = [
+      aws_s3_bucket.app_storage.arn
+    ]
+  }
+
+  # Permisiuni la nivel de Obiecte (CRUD pe fisiere)
+  statement {
+    sid    = "AllowS3ObjectCRUD"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject"
+    ]
+    resources = [
+      "${aws_s3_bucket.app_storage.arn}/*"
+    ]
+  }
+}
+
+# 3. Creeaza resursa IAM Policy pe baza documentului JSON de mai sus
+resource "aws_iam_policy" "s3_app_policy" {
+  name        = "${var.project_name}-s3-policy-${var.environment}"
+  description = "Permisiuni minime necesare aplicatiei pentru lucrul cu bucket-ul S3 ${aws_s3_bucket.app_storage.id}"
+  policy      = data.aws_iam_policy_document.s3_app_policy_doc.json
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "terraform"
+  }
+}
+
+# 4. Ataseaza Politica la IAM User
+resource "aws_iam_user_policy_attachment" "app_user_s3_attach" {
+  user       = aws_iam_user.app_user.name
+  policy_arn = aws_iam_policy.s3_app_policy.arn
+}
+
+# 5. Genereaza Access Key & Secret Key pentru aplicatie
+resource "aws_iam_access_key" "app_user_key" {
+  user = aws_iam_user.app_user.name
+}
+
+# ------------------------------------------------------------------------------
 # ECR REPOSITORY
 # ------------------------------------------------------------------------------
 
