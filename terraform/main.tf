@@ -132,6 +132,49 @@ resource "aws_instance" "app_server" {
   }
 }
 # ------------------------------------------------------------------------------
+# S3 BUCKET & CONFIGURATION
+# ------------------------------------------------------------------------------
+
+# 1. Generam un sufix aleatoriu pentru a garanta un nume unic global
+resource "random_string" "bucket_suffix" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
+# 2. Resursa principala a bucket-ului S3
+resource "aws_s3_bucket" "app_storage" {
+  bucket        = "${lower(var.project_name)}-storage-${var.environment}-${random_string.bucket_suffix.result}"
+  force_destroy = false # Impiedica stergerea accidentala daca bucket-ul contine fisiere
+
+  tags = {
+    Name        = "${var.project_name}-s3-${var.environment}"
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "terraform"
+  }
+}
+
+# 3. Block Public Access 
+resource "aws_s3_bucket_public_access_block" "app_storage_pab" {
+  bucket = aws_s3_bucket.app_storage.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# 4. Bucket Versioning 
+resource "aws_s3_bucket_versioning" "app_storage_versioning" {
+  bucket = aws_s3_bucket.app_storage.id
+
+  versioning_configuration {
+    status = "Disabled"
+  }
+}
+
+# ------------------------------------------------------------------------------
 # ECR REPOSITORY
 # ------------------------------------------------------------------------------
 

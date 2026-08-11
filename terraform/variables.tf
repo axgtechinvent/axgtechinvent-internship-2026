@@ -19,3 +19,4 @@ variable "my_ip" {
   type        = string
   description = "IP-ul meu"
 }
+
