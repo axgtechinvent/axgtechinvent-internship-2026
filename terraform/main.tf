@@ -119,8 +119,8 @@ data "aws_ami" "amazon_linux_2023" {
 # Crearea instantei EC2
 resource "aws_instance" "app_server" {
   ami                         = data.aws_ami.amazon_linux_2023.id
-  instance_type               = "t3.micro" # Free tier eligibil
-  subnet_id                   = aws_subnet.public_subnet.id # Plasare în subnetul public
+  instance_type               = "t3.micro"                     # Free tier eligibil
+  subnet_id                   = aws_subnet.public_subnet.id    # Plasare în subnetul public
   vpc_security_group_ids      = [aws_security_group.app_sg.id] # Atasare Security Group
   key_name                    = aws_key_pair.app_key.key_name
   associate_public_ip_address = true # Asigura un IP public
@@ -137,7 +137,7 @@ resource "aws_instance" "app_server" {
 
 # Create ECR repository 
 resource "aws_ecr_repository" "ecr" {
-  name                 = "my-ecr-app-dev"   
+  name                 = "my-ecr-app-dev"
   image_tag_mutability = "IMMUTABLE"
 
   image_scanning_configuration {
@@ -149,7 +149,7 @@ resource "aws_ecr_repository" "ecr" {
   }
 
   tags = {
-    Environment = var.environment 
+    Environment = var.environment
     ManagedBy   = "terraform"
   }
 }
