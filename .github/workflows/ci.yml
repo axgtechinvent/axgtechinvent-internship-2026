@@ -9,10 +9,14 @@ on:
       - develop
       - main
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
   AWS_REGION: eu-central-1
   ECR_REPOSITORY: myapp/ecr
-  IMAGE_TAG: latest
+  ROLE_ARN: arn:aws:iam::230355214351:role/InternshipCIDeployer
 
 jobs:
   build:
@@ -33,18 +37,21 @@ jobs:
     name: Push image to Amazon ECR
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/Docker-&-CI/CD-(Norby)' && github.event_name == 'push'
+    if: github.ref_name == 'Docker-&-CI/CD-(Norby)' && github.event_name == 'push'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.ROLE_ARN }}
+          role-session-name: gha-${{ github.run_id }}
+
+      - name: Verify identity
+        run: aws sts get-caller-identity
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -53,10 +60,14 @@ jobs:
       - name: Build, tag and push image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker tag "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          echo "IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_ENV"
 
       - name: Report push result
         if: success()
-        run: echo "Image pushed successfully to $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+        run: echo "Image pushed successfully to $IMAGE_URI"
