@@ -124,6 +124,7 @@ resource "aws_instance" "app_server" {
   vpc_security_group_ids      = [aws_security_group.app_sg.id] # Atasare Security Group
   key_name                    = aws_key_pair.app_key.key_name
   associate_public_ip_address = true # Asigura un IP public
+  iam_instance_profile        = aws_iam_instance_profile.app_profile.name
 
   tags = {
     Name        = "ec2-app-server-dev"
@@ -178,16 +179,6 @@ resource "aws_s3_bucket_versioning" "app_storage_versioning" {
 # IAM USER, POLICY & ACCESS KEYS 
 # ------------------------------------------------------------------------------
 
-# 1. Creeaza IAM User-ul dedicat aplicatiei
-resource "aws_iam_user" "app_user" {
-  name = "${var.project_name}-s3-user-${var.environment}"
-
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = "terraform"
-  }
-}
 
 # 2. Generam documentul de politica IAM urmand principiul Least Privilege
 data "aws_iam_policy_document" "s3_app_policy_doc" {
@@ -232,16 +223,7 @@ resource "aws_iam_policy" "s3_app_policy" {
   }
 }
 
-# 4. Ataseaza Politica la IAM User
-resource "aws_iam_user_policy_attachment" "app_user_s3_attach" {
-  user       = aws_iam_user.app_user.name
-  policy_arn = aws_iam_policy.s3_app_policy.arn
-}
 
-# 5. Genereaza Access Key & Secret Key pentru aplicatie
-resource "aws_iam_access_key" "app_user_key" {
-  user = aws_iam_user.app_user.name
-}
 
 # ------------------------------------------------------------------------------
 # ECR REPOSITORY
