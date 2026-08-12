@@ -13,10 +13,12 @@ def create_app():
 
     register_request_logging(app)
     register_error_handlers(app)
-    
+
     app.s3_client = get_s3_client(app.config["AWS_REGION"])
 
     from app.routes.main import main_bp
+    from app.routes.upload import upload_bp
     app.register_blueprint(main_bp)
+    app.register_blueprint(upload_bp)
 
     return app
