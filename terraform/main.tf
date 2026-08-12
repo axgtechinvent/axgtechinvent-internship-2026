@@ -116,6 +116,11 @@ data "aws_ami" "amazon_linux_2023" {
   }
 }
 
+resource "aws_iam_instance_profile" "app_profile" {
+  name = "${var.project_name}-ec2-profile-${var.environment}"
+  role = aws_iam_role.app_ec2_role.name
+}
+
 # Crearea instantei EC2
 resource "aws_instance" "app_server" {
   ami                         = data.aws_ami.amazon_linux_2023.id
@@ -223,7 +228,45 @@ resource "aws_iam_policy" "s3_app_policy" {
   }
 }
 
+# ------------------------------------------------------------------------------
+# IAM ROLE FOR EC2
+# ------------------------------------------------------------------------------
 
+resource "aws_iam_role" "app_ec2_role" {
+  name = "${var.project_name}-ec2-role-${var.environment}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "terraform"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_ecr_read_only" {
+  role       = aws_iam_role.app_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_s3_access" {
+  role       = aws_iam_role.app_ec2_role.name
+  policy_arn = aws_iam_policy.s3_app_policy.arn
+}
 
 # ------------------------------------------------------------------------------
 # ECR REPOSITORY
