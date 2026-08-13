@@ -5,7 +5,7 @@ resource "aws_vpc" "main" { #aws_vpc = Tipul resursei (ce se creează în AWS), 
   enable_dns_hostnames = true
 
   tags = {
-    Name        = "project-vpc-dev"
+    Name        = "project-vpc-${var.environment}"
     Environment = var.environment
   }
 }
@@ -18,7 +18,7 @@ resource "aws_subnet" "public_subnet" {
   map_public_ip_on_launch = true # Alocă IP public automat pentru instanțe
 
   tags = {
-    Name = "public-subnet-1a-dev"
+    Name = "public-subnet-1a-${var.environment}"
   }
 }
 
@@ -27,7 +27,7 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id # Conectare la VPC
 
   tags = {
-    Name = "main-igw-dev"
+    Name = "main-igw-${var.environment}"
   }
 }
 
@@ -42,7 +42,7 @@ resource "aws_route_table" "public_rt" {
   }
 
   tags = {
-    Name = "public-route-table-dev"
+    Name = "public-route-table-${var.environment}"
   }
 }
 
@@ -58,12 +58,12 @@ resource "aws_route_table_association" "public_assoc" {
 
 # 1. Definirea Security Group-ului (fara reguli inline)
 resource "aws_security_group" "app_sg" {
-  name        = "app-server-sg-dev"
+  name        = "app-server-sg-${var.environment}"
   description = "Security Group pentru serverele de aplicatie"
   vpc_id      = aws_vpc.main.id
 
   tags = {
-    Name        = "app-sg-dev"
+    Name        = "app-sg-${var.environment}"
     Environment = var.environment
   }
 }
@@ -81,6 +81,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_http" {
 
 
 # 4. Regula Outbound (iesire permisa catre orice destinatie)
+resource "aws_vpc_security_group_egress_rule" "allow_all_outbound" {
 resource "aws_vpc_security_group_egress_rule" "allow_all_outbound" {
   security_group_id = aws_security_group.app_sg.id
   description       = "Allow all outbound traffic"
@@ -260,7 +261,7 @@ resource "aws_iam_role_policy_attachment" "ec2_s3_access" {
 
 # Create ECR repository 
 resource "aws_ecr_repository" "ecr" {
-  name                 = "my-ecr-app-dev"
+  name                 = "my-ecr-app-${var.environment}"
   image_tag_mutability = "IMMUTABLE"
 
   image_scanning_configuration {
