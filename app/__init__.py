@@ -18,7 +18,9 @@ def create_app():
 
     from app.routes.main import main_bp
     from app.routes.upload import upload_bp
+    from app.routes.files import files_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(upload_bp)
+    app.register_blueprint(files_bp)
 
     return app

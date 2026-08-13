@@ -48,3 +48,37 @@ def upload_file(s3_client, bucket_name, file):
     except ClientError as e:
         logger.error("S3 upload failed for key=%s: %s", object_key, e)
         raise
+
+def list_files(s3_client, bucket_name, prefix="uploads/"):
+
+    # list objects in the bucket under the given prefix.
+
+    try:
+        response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        files = []
+        for obj in response.get("Contents", []):
+            files.append({
+                "key": obj["Key"],
+                "filename": obj["Key"].split("/")[-1],
+                "size": obj["Size"],
+                "last_modified": obj["LastModified"].isoformat(),
+            })
+        logger.info("Listed %d files from bucket=%s", len(files), bucket_name)
+        return files
+    except ClientError as e:
+        logger.error("S3 list failed for bucket=%s: %s", bucket_name, e)
+        raise
+
+
+def download_file(s3_client, bucket_name, object_key):
+
+    # fetch an object from S3.
+    try:
+        response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        filename = object_key.split("/")[-1]
+        content_type = response.get("ContentType", "application/octet-stream")
+        logger.info("Downloaded file from S3: bucket=%s key=%s", bucket_name, object_key)
+        return response["Body"], content_type, filename
+    except ClientError as e:
+        logger.error("S3 download failed for key=%s: %s", object_key, e)
+        raise
