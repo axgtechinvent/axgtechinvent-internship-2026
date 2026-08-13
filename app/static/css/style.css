@@ -10,8 +10,9 @@ body {
     color: #2c2c2a;
     min-height: 100vh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    padding: 3rem 1rem;
 }
 
 .card {
@@ -20,7 +21,8 @@ body {
     border-radius: 12px;
     padding: 2.5rem 3rem;
     text-align: center;
-    max-width: 420px;
+    max-width: 560px;
+    width: 100%;
 }
 
 h1 {
@@ -43,7 +45,7 @@ h1 {
     padding: 0.4rem 0.9rem;
     border-radius: 999px;
     font-size: 0.9rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 2rem;
 }
 
 .status-dot {
@@ -52,58 +54,138 @@ h1 {
     border-radius: 50%;
     background: #639922;
 }
-form {
-    margin-top: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+
+/* Drop zone */
+.drop-zone {
+    border: 2px dashed #c7c4b8;
+    border-radius: 10px;
+    padding: 2rem 1rem;
+    transition: all 0.15s ease;
+    margin-bottom: 0.75rem;
 }
 
-input[type="file"] {
+.drop-zone.drag-active {
+    border-color: #639922;
+    background: #f5f9ee;
+}
+
+.drop-zone p {
+    color: #5f5e5a;
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+}
+
+.upload-btn {
+    display: inline-block;
+    background: #2c2c2a;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
     font-size: 0.9rem;
 }
 
-button {
-    background: #2c2c2a;
-    color: white;
-    border: none;
-    padding: 0.6rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.95rem;
-}
-
-button:hover {
+.upload-btn:hover {
     background: #45443f;
 }
 
-#result {
-    margin-top: 1.2rem;
+#upload-status {
+    min-height: 1.2rem;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.status-success { color: #27500a; }
+.status-error { color: #a33; }
+
+/* Files section */
+.files-section {
+    text-align: left;
+}
+
+.files-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.files-header h2 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #2c2c2a;
+}
+
+#refresh-btn {
+    background: none;
+    border: 1px solid #d3d1c7;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
     font-size: 0.9rem;
-    word-break: break-word;
+    color: #5f5e5a;
 }
 
-.status-success {
-    color: #27500a;
+#refresh-btn:hover {
+    border-color: #639922;
+    color: #639922;
 }
 
-.status-error {
-    color: #a33;
+.file-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid #ece9df;
 }
 
-.upload-link {
-    display: block;
-    width: fit-content;
-    margin: 1.2rem auto 0;
-    margin-top: 1.5rem;
+.file-row:last-child {
+    border-bottom: none;
+}
+
+.file-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.file-name {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+}
+
+.file-meta {
+    font-size: 0.75rem;
+    color: #8a8880;
+}
+
+.download-btn {
+    flex-shrink: 0;
+    margin-left: 1rem;
+    font-size: 0.8rem;
     color: #2c2c2a;
     text-decoration: none;
-    font-size: 0.9rem;
-    border-bottom: 1px solid #2c2c2a;
-    padding-bottom: 2px;
+    border: 1px solid #d3d1c7;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
 }
 
-.upload-link:hover {
-    color: #639922;
+.download-btn:hover {
     border-color: #639922;
+    color: #639922;
+}
+
+.empty-state {
+    color: #8a8880;
+    font-size: 0.85rem;
+    padding: 1rem 0;
+}
+
+.empty-state.error {
+    color: #a33;
 }

@@ -14,7 +14,132 @@
             <span class="status-dot"></span>
             <span>Status: {{ status }}</span>
         </div>
-        <a href="/upload-page" class="upload-link">Go to Upload →</a>
+
+        <div id="drop-zone" class="drop-zone">
+            <p>Drag & drop a file here, or</p>
+            <label for="file-input" class="upload-btn">Choose File</label>
+            <input type="file" id="file-input" hidden>
+        </div>
+
+        <div id="upload-status"></div>
+
+        <div class="files-section">
+            <div class="files-header">
+                <h2>Files</h2>
+                <button id="refresh-btn" title="Refresh list">⟳</button>
+            </div>
+            <div id="files-list">
+                <p class="empty-state">Loading files...</p>
+            </div>
+        </div>
     </main>
+
+    <script>
+        const dropZone = document.getElementById("drop-zone");
+        const fileInput = document.getElementById("file-input");
+        const uploadStatus = document.getElementById("upload-status");
+        const filesList = document.getElementById("files-list");
+        const refreshBtn = document.getElementById("refresh-btn");
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+            return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+        }
+
+        function formatDate(iso) {
+            const d = new Date(iso);
+            return d.toLocaleString();
+        }
+
+        async function loadFiles() {
+            filesList.innerHTML = `<p class="empty-state">Loading files...</p>`;
+            try {
+                const res = await fetch("/files");
+                const data = await res.json();
+
+                if (!res.ok) {
+                    filesList.innerHTML = `<p class="empty-state error">Could not load files: ${data.error}</p>`;
+                    return;
+                }
+
+                if (data.files.length === 0) {
+                    filesList.innerHTML = `<p class="empty-state">No files uploaded yet.</p>`;
+                    return;
+                }
+
+                filesList.innerHTML = "";
+                data.files.forEach(file => {
+                    const row = document.createElement("div");
+                    row.className = "file-row";
+                    row.innerHTML = `
+                        <div class="file-info">
+                            <span class="file-name">${file.filename}</span>
+                            <span class="file-meta">${formatSize(file.size)} · ${formatDate(file.last_modified)}</span>
+                        </div>
+                        <a class="download-btn" href="/download?key=${encodeURIComponent(file.key)}">Download</a>
+                    `;
+                    filesList.appendChild(row);
+                });
+            } catch (err) {
+                filesList.innerHTML = `<p class="empty-state error">Could not reach server.</p>`;
+            }
+        }
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            uploadStatus.textContent = `Uploading ${file.name}...`;
+            uploadStatus.className = "";
+
+            try {
+                const res = await fetch("/upload", { method: "POST", body: formData });
+                const data = await res.json();
+
+                if (res.ok) {
+                    uploadStatus.textContent = `Uploaded: ${file.name}`;
+                    uploadStatus.className = "status-success";
+                    loadFiles();
+                } else {
+                    uploadStatus.textContent = `Error: ${data.error}`;
+                    uploadStatus.className = "status-error";
+                }
+            } catch (err) {
+                uploadStatus.textContent = "Upload failed: could not reach server";
+                uploadStatus.className = "status-error";
+            }
+        }
+
+        // Manual file picker
+        fileInput.addEventListener("change", () => {
+            if (fileInput.files.length) uploadFile(fileInput.files[0]);
+        });
+
+        // Drag & drop
+        ["dragenter", "dragover"].forEach(evt =>
+            dropZone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropZone.classList.add("drag-active");
+            })
+        );
+
+        ["dragleave", "drop"].forEach(evt =>
+            dropZone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove("drag-active");
+            })
+        );
+
+        dropZone.addEventListener("drop", (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) uploadFile(file);
+        });
+
+        refreshBtn.addEventListener("click", loadFiles);
+
+        // Initial load
+        loadFiles();
+    </script>
 </body>
 </html>

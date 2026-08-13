@@ -2,7 +2,7 @@
 
 import logging
 
-from flask import Blueprint, current_app, jsonify, send_file
+from flask import Blueprint, current_app, jsonify, send_file, request
 from botocore.exceptions import ClientError
 
 from app.services.s3_service import list_files, download_file
@@ -26,14 +26,16 @@ def get_files():
     return jsonify({"files": files, "count": len(files)}), 200
 
 
-@files_bp.route("/files/<path:filename>", methods=["GET"])
-def get_file(filename):
+@files_bp.route("/download", methods=["GET"])
+def download():
     bucket_name = current_app.config["S3_BUCKET_NAME"]
     if not bucket_name:
         logger.error("S3_BUCKET_NAME is not configured")
         return jsonify({"error": "File service is not configured"}), 500
 
-    object_key = f"uploads/{filename}" if not filename.startswith("uploads/") else filename
+    object_key = request.args.get("key")
+    if not object_key:
+        return jsonify({"error": "Missing 'key' query parameter"}), 400
 
     try:
         body, content_type, download_name = download_file(current_app.s3_client, bucket_name, object_key)
