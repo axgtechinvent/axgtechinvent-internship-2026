@@ -56,11 +56,6 @@ resource "aws_route_table_association" "public_assoc" {
 # SECURITY GROUP & COMPUTE (EC2 & AMI)
 # ------------------------------------------------------------------------------
 
-resource "aws_key_pair" "app_key" {
-  key_name   = "app-server-key-dev"
-  public_key = file(pathexpand(var.public_key_path))
-}
-
 # 1. Definirea Security Group-ului (fara reguli inline)
 resource "aws_security_group" "app_sg" {
   name        = "app-server-sg-dev"
@@ -83,15 +78,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_http" {
   to_port           = 80
 }
 
-# 3. Regula Inbound SSH 
-resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
-  security_group_id = aws_security_group.app_sg.id
-  description       = "Allow SSH from my IP"
-  cidr_ipv4         = "${var.my_ip}/32"
-  from_port         = 22
-  ip_protocol       = "tcp"
-  to_port           = 22
-}
+
 
 # 4. Regula Outbound (iesire permisa catre orice destinatie)
 resource "aws_vpc_security_group_egress_rule" "allow_all_outbound" {
@@ -127,7 +114,6 @@ resource "aws_instance" "app_server" {
   instance_type               = "t3.micro"                     # Free tier eligibil
   subnet_id                   = aws_subnet.public_subnet.id    # Plasare în subnetul public
   vpc_security_group_ids      = [aws_security_group.app_sg.id] # Atasare Security Group
-  key_name                    = aws_key_pair.app_key.key_name
   associate_public_ip_address = true # Asigura un IP public
   iam_instance_profile        = aws_iam_instance_profile.app_profile.name
 
