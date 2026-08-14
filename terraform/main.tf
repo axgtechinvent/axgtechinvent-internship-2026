@@ -117,6 +117,12 @@ resource "aws_instance" "app_server" {
   associate_public_ip_address = true # Asigura un IP public
   iam_instance_profile        = aws_iam_instance_profile.app_profile.name
 
+  user_data = <<-EOF
+              #!/bin/bash
+              echo "S3_BUCKET_NAME=${aws_s3_bucket.app_storage.id}" > /etc/app.env
+              echo "AWS_REGION=${aws_s3_bucket.app_storage.region}" >> /etc/app.env
+              EOF
+
   tags = {
     Name        = "ec2-app-server-dev"
     Environment = var.environment
