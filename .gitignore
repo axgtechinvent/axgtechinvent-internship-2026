@@ -4,6 +4,7 @@
 .terraform.lock.hcl
 .aws/
 *.tfvars
+!terraform/terraform.tfvars
 *.tfstate*
 .env
 *.pyc
