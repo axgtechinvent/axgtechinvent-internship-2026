@@ -39,7 +39,10 @@ data "aws_iam_policy_document" "ssm_team_access" {
     sid       = "AllowSessionDocument"
     effect    = "Allow"
     actions   = ["ssm:StartSession"]
-    resources = ["arn:aws:ssm:*::document/SSM-SessionManagerRunShell"]
+    resources = [
+      "arn:aws:ssm:*::document/SSM-SessionManagerRunShell",
+      "arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:document/SSM-SessionManagerRunShell",
+    ]
   }
 
   # Each person may only kill or resume their OWN sessions, not a colleague's.
