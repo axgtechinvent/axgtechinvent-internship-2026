@@ -119,12 +119,13 @@ jobs:
         env:
           IMAGE_TAG: ${{ needs.push-to-ecr.outputs.image_tag }}
         run: |
-          IMAGE_URI="230355214351.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}"
+          REGISTRY="230355214351.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}"
 
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ steps.find-instance.outputs.instance_id }}" \
             --document-name "AWS-RunShellScript" \
-            --parameters "commands=[\"cd /home/ssm-user\", \"sed -i -E 's|image: .*|image: ${IMAGE_URI}|' docker-compose.yaml\", \"docker compose pull\", \"docker compose up -d\"]" \
+            --parameters "commands=[\"cd /home/ssm-user\", \"aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin $REGISTRY\", \"sed -i -E 's|image: .*|image: ${IMAGE_URI}|' docker-compose.yaml\", \"docker compose pull\", \"docker compose up -d\"]" \
             --region ${{ env.AWS_REGION }} \
             --query "Command.CommandId" \
             --output text)
@@ -136,7 +137,7 @@ jobs:
             --region ${{ env.AWS_REGION }}
 
       - name: Show deployment output
-        if: always()
+        if: always() && env.command_id != ''
         run: |
           aws ssm list-command-invocations \
             --instance-id "${{ steps.find-instance.outputs.instance_id }}" \
