@@ -121,6 +121,19 @@ resource "aws_instance" "app_server" {
               #!/bin/bash
               echo "S3_BUCKET_NAME=${aws_s3_bucket.app_storage.id}" > /etc/app.env
               echo "AWS_REGION=${aws_s3_bucket.app_storage.region}" >> /etc/app.env
+
+              # Install and start Docker
+              dnf update -y
+              dnf install -y docker
+              systemctl enable docker
+              systemctl start docker
+              usermod -aG docker ec2-user
+
+              # Install Docker Compose (v2 plugin)
+              mkdir -p /usr/local/lib/docker/cli-plugins
+              curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+                -o /usr/local/lib/docker/cli-plugins/docker-compose
+              chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
               EOF
 
   tags = {
