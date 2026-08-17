@@ -1,6 +1,9 @@
 ﻿name: CI/CD - Build and Push Docker Image
 
 on:
+  push:
+    branches:
+      - develop
   workflow_dispatch:
 
 permissions:
@@ -42,7 +45,10 @@ jobs:
     name: Push image to Amazon ECR
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref_name == 'develop' && github.event_name == 'workflow_dispatch'
+    
+    if: github.ref_name == 'develop' || github.ref_name == 'Docker-&-CI/CD-(Norby)'
+    outputs:
+      image_tag: ${{ steps.set-tag.outputs.image_tag }}
 
     steps:
       - name: Checkout repository
@@ -62,17 +68,81 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag and push image to ECR
+      
+      - name: Build and push image to ECR
+        id: set-tag
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          docker tag "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" "$ECR_REGISTRY/$ECR_REPOSITORY:test-dev"
-          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:test-dev"
           echo "IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_ENV"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Report push result
         if: success()
         run: echo "Image pushed successfully to $IMAGE_URI"
+
+  deploy:
+    name: Deploy latest image to EC2
+    runs-on: ubuntu-latest
+    needs: push-to-ecr
+    
+    if: github.ref_name == 'develop' || github.ref_name == 'Docker-&-CI/CD-(Norby)'
+
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.ROLE_ARN }}
+          role-session-name: gha-deploy-${{ github.run_id }}
+          
+      - name: Resolve target EC2 instance by tag
+        id: find-instance
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Project,Values=AxgProject" "Name=tag:Environment,Values=dev" "Name=instance-state-name,Values=running" \
+            --query "Reservations[0].Instances[0].InstanceId" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          if [ "$INSTANCE_ID" = "None" ] || [ -z "$INSTANCE_ID" ]; then
+            echo "No running EC2 instance found with the expected tags." >&2
+            exit 1
+          fi
+          echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+          echo "Deploying to $INSTANCE_ID"
+
+     
+      - name: Deploy via SSM Send-Command
+        env:
+          IMAGE_TAG: ${{ needs.push-to-ecr.outputs.image_tag }}
+        run: |
+          IMAGE_URI="230355214351.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}"
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ steps.find-instance.outputs.instance_id }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "commands=[\"cd /home/ssm-user\", \"sed -i -E 's|image: .*|image: ${IMAGE_URI}|' docker-compose.yaml\", \"docker compose pull\", \"docker compose up -d\"]" \
+            --region ${{ env.AWS_REGION }} \
+            --query "Command.CommandId" \
+            --output text)
+          echo "command_id=$COMMAND_ID" >> "$GITHUB_ENV"
+          echo "Waiting for command $COMMAND_ID to finish on ${{ steps.find-instance.outputs.instance_id }}..."
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ steps.find-instance.outputs.instance_id }}" \
+            --region ${{ env.AWS_REGION }}
+
+      
+      - name: Show deployment output
+        if: always()
+        run: |
+          aws ssm list-command-invocations \
+            --instance-id "${{ steps.find-instance.outputs.instance_id }}" \
+            --command-id "${{ env.command_id }}" \
+            --details \
+            --region ${{ env.AWS_REGION }} \
+            --query "CommandInvocations[0].CommandPlugins[0].Output" \
+            --output text
