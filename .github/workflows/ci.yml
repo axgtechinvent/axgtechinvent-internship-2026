@@ -71,9 +71,20 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
-          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+          if aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$IMAGE_TAG" --region ${{ env.AWS_REGION }} >/dev/null 2>&1; then
+            echo "Tag $IMAGE_TAG already exists in ECR, skipping push."
+          else
+            docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          fi
+
           docker tag "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" "$ECR_REGISTRY/$ECR_REPOSITORY:test-dev"
-          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:test-dev"
+          if aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag=test-dev --region ${{ env.AWS_REGION }} >/dev/null 2>&1; then
+            echo "Tag test-dev already exists in ECR, skipping push."
+          else
+            docker push "$ECR_REGISTRY/$ECR_REPOSITORY:test-dev"
+          fi
+
           echo "IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_ENV"
           echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
