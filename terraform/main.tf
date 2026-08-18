@@ -134,6 +134,19 @@ resource "aws_instance" "app_server" {
               curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
                 -o /usr/local/lib/docker/cli-plugins/docker-compose
               chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+              # Seed the compose file the CI deploy step (sed + docker compose up) expects
+              mkdir -p /home/ssm-user
+              cat > /home/ssm-user/docker-compose.yaml <<'COMPOSE'
+              services:
+                app:
+                  image: PLACEHOLDER
+                  restart: unless-stopped
+                  ports:
+                    - "80:5000"
+                  env_file:
+                    - /etc/app.env
+              COMPOSE
               EOF
 
   tags = {
