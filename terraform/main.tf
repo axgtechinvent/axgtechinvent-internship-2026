@@ -117,6 +117,38 @@ resource "aws_instance" "app_server" {
   associate_public_ip_address = true # Asigura un IP public
   iam_instance_profile        = aws_iam_instance_profile.app_profile.name
 
+  user_data = <<-EOF
+              #!/bin/bash
+              echo "S3_BUCKET_NAME=${aws_s3_bucket.app_storage.id}" > /etc/app.env
+              echo "AWS_REGION=${aws_s3_bucket.app_storage.region}" >> /etc/app.env
+
+              # Install and start Docker
+              dnf update -y
+              dnf install -y docker
+              systemctl enable docker
+              systemctl start docker
+              usermod -aG docker ec2-user
+
+              # Install Docker Compose (v2 plugin)
+              mkdir -p /usr/local/lib/docker/cli-plugins
+              curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+                -o /usr/local/lib/docker/cli-plugins/docker-compose
+              chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+              # Seed the compose file the CI deploy step (sed + docker compose up) expects
+              mkdir -p /home/ssm-user
+              cat > /home/ssm-user/docker-compose.yaml <<'COMPOSE'
+              services:
+                app:
+                  image: PLACEHOLDER
+                  restart: unless-stopped
+                  ports:
+                    - "80:5000"
+                  env_file:
+                    - /etc/app.env
+              COMPOSE
+              EOF
+
   tags = {
     Name        = "ec2-app-server-dev"
     Environment = var.environment

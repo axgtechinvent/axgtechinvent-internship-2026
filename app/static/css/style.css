@@ -189,3 +189,95 @@ h1 {
 .empty-state.error {
     color: #a33;
 }
+
+.file-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.delete-btn {
+    font-size: 0.8rem;
+    color: #a33;
+    background: none;
+    border: 1px solid #e0c4c4;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    background: #fbeaea;
+    border-color: #a33;
+}
+
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(44, 44, 42, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.confirm-overlay.hidden {
+    display: none;
+}
+
+.confirm-modal {
+    background: white;
+    border-radius: 12px;
+    padding: 1.75rem 2rem;
+    max-width: 320px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.confirm-message {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+}
+
+.confirm-filename {
+    font-size: 0.85rem;
+    color: #8a8880;
+    word-break: break-word;
+    margin-bottom: 1.5rem;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.confirm-btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+}
+
+.confirm-cancel {
+    background: #f1efe8;
+    color: #2c2c2a;
+    border: 1px solid #d3d1c7;
+}
+
+.confirm-cancel:hover {
+    background: #e5e2d8;
+}
+
+.confirm-delete {
+    background: #a33;
+    color: white;
+}
+
+.confirm-delete:hover {
+    background: #8a2a2a;
+}
