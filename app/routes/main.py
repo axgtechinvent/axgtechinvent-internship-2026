@@ -22,7 +22,3 @@ def health():
         "app_name": current_app.config["APP_NAME"],
         "environment": current_app.config.get("ENVIRONMENT", "development"),
     }), 200
-
-@main_bp.route("/upload-page")
-def upload_page():
-    return render_template("upload.html", app_name=current_app.config["APP_NAME"])
