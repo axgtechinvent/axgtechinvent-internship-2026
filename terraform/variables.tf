@@ -1,22 +1,17 @@
-variable "public_key_path" {
-  description = "Calea catre cheia publica SSH"
-  type        = string
-  default     = "~/.ssh/id_rsa_aws.pub"
-}
+
 variable "environment" {
-  description = "Mediul de deployment"
+  description = "Deployment"
   type        = string
   default     = "dev"
 }
 
 variable "project_name" {
-  description = "Numele proiectului"
+  description = "Project name"
   type        = string
   default     = "AxgProject"
 }
 
-variable "my_ip" {
-  type        = string
-  description = "IP-ul meu"
+variable "aws_region" {
+  description = "AWS region"
+  default     = "eu-central-1"
 }
-
