@@ -18,7 +18,9 @@ def register_request_logging(app):
     @app.after_request
     def _log_request(response):
         duration_ms = (time.time() - getattr(request, "_start_time", time.time())) * 1000
-        logger.info(
+        level = logging.INFO if response.status_code < 400 else logging.WARNING
+        logger.log(
+            level,
             "%s %s -> %s (%.1fms)",
             request.method,
             request.path,
