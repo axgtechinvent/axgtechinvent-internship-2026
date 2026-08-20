@@ -9,3 +9,8 @@ variable "project_name" {
   type        = string
   default     = "AxgProject"
 }
+
+variable "aws_region" {
+  description = "AWS region"
+  default     = "eu-central-1"
+}

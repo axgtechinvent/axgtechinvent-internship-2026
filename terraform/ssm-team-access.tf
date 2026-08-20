@@ -14,7 +14,7 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role_policy_attachment" "ec2_ssm_core" {
-  role       = aws_iam_role.app_ec2_role.name
+  role       = module.ec2.iam_role_name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
@@ -163,7 +163,7 @@ resource "aws_ssm_document" "session_preferences" {
 
 output "ssm_connect_command" {
   description = "What each teammate runs to get a shell."
-  value       = "aws ssm start-session --target ${aws_instance.app_server.id}"
+  value       = "aws ssm start-session --target ${modules.ec2_instance_id}"
 }
 
 output "ec2_operators_group" {
