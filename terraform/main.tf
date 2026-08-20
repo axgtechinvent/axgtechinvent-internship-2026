@@ -9,13 +9,9 @@ module "s3" {
   environment  = var.environment
 }
 
-# 4. Bucket Versioning 
-resource "aws_s3_bucket_versioning" "app_storage_versioning" {
-  bucket = aws_s3_bucket.app_storage.id
-
-  versioning_configuration {
-    status = "Disabled"
-  }
+module "ecr" {
+  source      = "./modules/ecr"
+  environment = var.environment
 }
 
 module "ec2" {
