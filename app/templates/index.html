@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ app_name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-
 <body>
     <main class="card">
         <h1>{{ app_name }}</h1>
@@ -34,7 +32,6 @@
                 <p class="empty-state">Loading files...</p>
             </div>
         </div>
-
     </main>
 
     <div id="confirm-overlay" class="confirm-overlay hidden">
@@ -48,12 +45,29 @@
         </div>
     </div>
 
+    <div id="preview-overlay" class="confirm-overlay hidden">
+        <div class="preview-modal">
+            <div class="preview-header">
+                <span id="preview-filename"></span>
+                <button id="preview-close" class="preview-close">✕</button>
+            </div>
+            <div id="preview-body" class="preview-body"></div>
+        </div>
+    </div>
+
     <script>
         const dropZone = document.getElementById("drop-zone");
         const fileInput = document.getElementById("file-input");
         const uploadStatus = document.getElementById("upload-status");
         const filesList = document.getElementById("files-list");
         const refreshBtn = document.getElementById("refresh-btn");
+
+        const IMAGE_EXT = ["png", "jpg", "jpeg", "gif"];
+        const TEXT_EXT = ["txt", "csv"];
+
+        function getExtension(filename) {
+            return filename.split(".").pop().toLowerCase();
+        }
 
         function formatSize(bytes) {
             if (bytes < 1024) return bytes + " B";
@@ -64,6 +78,11 @@
         function formatDate(iso) {
             const d = new Date(iso);
             return d.toLocaleString();
+        }
+
+        function getDisplayName(filename) {
+            const match = filename.match(/^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}_[a-f0-9]{8}_(.+)$/);
+            return match ? match[1] : filename;
         }
 
         async function loadFiles() {
@@ -86,12 +105,15 @@
 
                 filesList.innerHTML = "";
                 files.forEach(file => {
+                    const ext = getExtension(file.filename);
+                    const previewable = IMAGE_EXT.includes(ext) || ext === "pdf" || TEXT_EXT.includes(ext);
+
                     const row = document.createElement("div");
                     row.className = "file-row";
                     row.innerHTML = `
-                        <div class="file-info">
-                            <span class="file-name">${file.filename}</span>
-                            <span class="file-meta">${formatSize(file.size)} · ${formatDate(file.last_modified)}</span>
+                    <div class="file-info">
+                        <span class="file-name ${previewable ? "previewable" : ""}" data-key="${file.key}" data-filename="${file.filename}">${getDisplayName(file.filename)}</span>
+                        <span class="file-meta">${formatSize(file.size)} · ${formatDate(file.last_modified)}</span>
                         </div>
                         <div class="file-actions">
                             <a class="download-btn" href="/download?key=${encodeURIComponent(file.key)}">Download</a>
@@ -153,6 +175,7 @@
             if (file) uploadFile(file);
         });
 
+        // Delete flow
         const confirmOverlay = document.getElementById("confirm-overlay");
         const confirmFilename = document.getElementById("confirm-filename");
         const confirmCancel = document.getElementById("confirm-cancel");
@@ -160,10 +183,15 @@
         let pendingDeleteKey = null;
 
         filesList.addEventListener("click", (e) => {
-            if (!e.target.classList.contains("delete-btn")) return;
-            pendingDeleteKey = e.target.dataset.key;
-            confirmFilename.textContent = pendingDeleteKey.split("/").pop();
-            confirmOverlay.classList.remove("hidden");
+            if (e.target.classList.contains("delete-btn")) {
+                pendingDeleteKey = e.target.dataset.key;
+                confirmFilename.textContent = pendingDeleteKey.split("/").pop();
+                confirmOverlay.classList.remove("hidden");
+                return;
+            }
+            if (e.target.classList.contains("previewable")) {
+                openPreview(e.target.dataset.key, e.target.dataset.filename);
+            }
         });
 
         confirmCancel.addEventListener("click", () => {
@@ -196,12 +224,63 @@
             pendingDeleteKey = null;
         });
 
+        // Preview flow
+        const previewOverlay = document.getElementById("preview-overlay");
+        const previewFilename = document.getElementById("preview-filename");
+        const previewBody = document.getElementById("preview-body");
+        const previewClose = document.getElementById("preview-close");
 
+        async function openPreview(key, filename) {
+            previewFilename.textContent = getDisplayName(filename);
+            previewBody.innerHTML = `<p class="preview-loading">Loading preview...</p>`;
+            previewOverlay.classList.remove("hidden");
+
+            const ext = getExtension(filename);
+            const previewUrl = `/preview?key=${encodeURIComponent(key)}`;
+
+            if (IMAGE_EXT.includes(ext)) {
+                previewBody.innerHTML = `<img src="${previewUrl}" alt="${filename}" class="preview-image">`;
+            } else if (ext === "pdf") {
+                previewBody.innerHTML = `<iframe src="${previewUrl}" class="preview-pdf"></iframe>`;
+            } else if (TEXT_EXT.includes(ext)) {
+                try {
+                    const res = await fetch(previewUrl);
+                    if (!res.ok) {
+                        previewBody.innerHTML = `<p class="preview-error">Could not load preview.</p>`;
+                        return;
+                    }
+                    const text = await res.text();
+                    const pre = document.createElement("pre");
+                    pre.className = "preview-text";
+                    pre.textContent = text;
+                    previewBody.innerHTML = "";
+                    previewBody.appendChild(pre);
+                } catch (err) {
+                    previewBody.innerHTML = `<p class="preview-error">Could not reach server.</p>`;
+                }
+            } else {
+                previewBody.innerHTML = `<p class="preview-unsupported">Preview not available for this file type.</p>`;
+            }
+        }
+
+        previewClose.addEventListener("click", () => {
+            previewOverlay.classList.add("hidden");
+            previewBody.innerHTML = "";
+        });
+
+        previewOverlay.addEventListener("click", (e) => {
+            if (e.target === previewOverlay) {
+                previewOverlay.classList.add("hidden");
+                previewBody.innerHTML = "";
+            }
+        });
 
         refreshBtn.addEventListener("click", loadFiles);
 
         loadFiles();
+
+
+
     </script>
 </body>
-
 </html>

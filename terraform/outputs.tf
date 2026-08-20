@@ -31,3 +31,9 @@ output "s3_bucket_region" {
   description = "Regiunea AWS in care se afla bucket-ul"
   value       = aws_s3_bucket.app_storage.region
 }
+
+
+output "ecr_repository_url" {
+  description = "URL-ul repository-ului ECR"
+  value       = module.ecr.repository_url
+}
