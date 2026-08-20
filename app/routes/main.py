@@ -1,4 +1,5 @@
-from flask import Blueprint, current_app, render_template
+from datetime import datetime, timezone
+from flask import Blueprint, current_app, render_template, jsonify
 
 main_bp = Blueprint("main", __name__)
 
@@ -15,5 +16,9 @@ def index():
 
 @main_bp.route("/health")
 def health():
-    """Simple health check endpoint, useful later for EC2/monitoring."""
-    return {"status": "ok"}, 200
+    return jsonify({
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "app_name": current_app.config["APP_NAME"],
+        "environment": current_app.config.get("ENVIRONMENT", "development"),
+    }), 200

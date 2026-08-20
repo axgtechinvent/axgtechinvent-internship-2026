@@ -1,0 +1,72 @@
+﻿name: Terraform - Plan/Apply/Destroy
+run-name: "Terraform: ${{ inputs.environment }}-${{ inputs.action }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Ce actiune Terraform rulezi'
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+      environment:
+        description: 'Config'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-central-1
+  # Account ID-ul nu mai e hardcodat in cod - vine dintr-o Repository
+  # Variable (Settings -> Secrets and variables -> Actions -> Variables).
+  ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/InternshipCIDeployer
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action }} (${{ github.event.inputs.environment }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.ROLE_ARN }}
+          role-session-name: gha-tf-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.0
+
+      - name: Terraform Init
+        run: terraform init -backend-config="key=${{ github.event.inputs.environment }}/terraform.tfstate"
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        if: github.event.inputs.action == 'plan'
+        run: terraform plan -var="environment=${{ github.event.inputs.environment }}"
+
+      - name: Terraform Apply
+        if: github.event.inputs.action == 'apply'
+        run: terraform apply -auto-approve -var="environment=${{ github.event.inputs.environment }}"
+
+      - name: Terraform Destroy
+        if: github.event.inputs.action == 'destroy'
+        run: terraform destroy -auto-approve -var="environment=${{ github.event.inputs.environment }}"
