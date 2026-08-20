@@ -1,4 +1,4 @@
-services:
+﻿services:
   app:
     container_name: cloud-file-storage
     image: 230355214351.dkr.ecr.eu-central-1.amazonaws.com/myapp/ecr:test-dev
@@ -10,6 +10,13 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: eu-central-1
+        awslogs-group: /cloud-file-storage/app
+        awslogs-stream: ec2-app-server-dev
+        awslogs-create-group: "true"
     networks:
       - app-network
     healthcheck:
