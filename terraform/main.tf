@@ -179,16 +179,23 @@ resource "aws_s3_bucket" "app_storage" {
   }
 }
 
+# 3. Block Public Access 
+resource "aws_s3_bucket_public_access_block" "app_storage_pab" {
+  bucket = aws_s3_bucket.app_storage.id
 
-module "s3" {
-  source       = "./modules/s3"
-  project_name = var.project_name
-  environment  = var.environment
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
-module "ecr" {
-  source      = "./modules/ecr"
-  environment = var.environment
+# 4. Bucket Versioning 
+resource "aws_s3_bucket_versioning" "app_storage_versioning" {
+  bucket = aws_s3_bucket.app_storage.id
+
+  versioning_configuration {
+    status = "Disabled"
+  }
 }
 
 # ------------------------------------------------------------------------------
