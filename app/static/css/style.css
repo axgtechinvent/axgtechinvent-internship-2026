@@ -281,3 +281,109 @@ h1 {
 .confirm-delete:hover {
     background: #8a2a2a;
 }
+
+.file-name.previewable {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+.file-name.previewable:hover {
+    color: #639922;
+}
+
+.preview-modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 640px;
+    width: 92%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #ece9df;
+    font-size: 0.9rem;
+    font-weight: 500;
+    gap: 1rem;
+}
+
+.preview-close {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #8a8880;
+}
+
+.preview-close:hover {
+    color: #2c2c2a;
+}
+
+.preview-body {
+    padding: 1.25rem;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 65vh;
+    border-radius: 6px;
+}
+
+.preview-pdf {
+    width: 100%;
+    height: 65vh;
+    border: none;
+}
+
+.preview-text {
+    width: 100%;
+    max-height: 65vh;
+    overflow: auto;
+    text-align: left;
+    font-size: 0.85rem;
+    background: #f6f5f0;
+    padding: 1rem;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.preview-loading,
+.preview-error,
+.preview-unsupported {
+    color: #8a8880;
+    font-size: 0.9rem;
+}
+
+.preview-error {
+    color: #a33;
+}
+
+#preview-filename {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.preview-close {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #8a8880;
+    flex-shrink: 0;
+}

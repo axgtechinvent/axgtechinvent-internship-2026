@@ -77,3 +77,28 @@ def delete():
 
     logger.info("Delete succeeded: key='%s'", object_key)
     return success_response({"key": object_key, "message": "File deleted"}, 200)
+
+@files_bp.route("/preview", methods=["GET"])
+def preview():
+    bucket_name = current_app.config["S3_BUCKET_NAME"]
+    if not bucket_name:
+        logger.error("Preview failed: S3_BUCKET_NAME is not configured")
+        return error_response("File service is not configured", 500)
+
+    object_key = request.args.get("key")
+    if not object_key:
+        logger.warning("Preview rejected: missing 'key' query parameter")
+        return error_response("Missing 'key' query parameter", 400)
+
+    try:
+        body, content_type, filename = download_file(current_app.s3_client, bucket_name, object_key)
+    except ClientError as e:
+        error_code = e.response.get("Error", {}).get("Code", "")
+        if error_code in ("NoSuchKey", "404"):
+            logger.warning("Preview failed: key not found '%s'", object_key)
+            return error_response("File not found", 404)
+        logger.error("Preview failed for key='%s' due to S3 error", object_key)
+        return error_response("Preview failed, please try again", 500)
+
+    logger.info("Preview succeeded: key='%s'", object_key)
+    return send_file(body, mimetype=content_type, as_attachment=False, download_name=filename)
