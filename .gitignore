@@ -4,6 +4,7 @@
 .terraform.lock.hcl
 .aws/
 *.tfvars
+!terraform/terraform.tfvars
 *.tfstate*
 .env
 *.pyc
@@ -15,3 +16,4 @@ uploads/*
 .idea/
 .vs/
 __pycache__/
+.DS_Store

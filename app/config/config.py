@@ -7,12 +7,14 @@ load_dotenv()
 
 class BaseConfig:
 
-    APP_NAME = "Cloud File Storage"
+    APP_NAME = os.getenv("APP_NAME", "Cloud File Storage")
+
+    ENVIRONMENT = os.getenv("APP_ENV", "development")
 
     PORT = int(os.getenv("APP_PORT", 5000))
     HOST = os.getenv("APP_HOST", "0.0.0.0")
 
-    # AWS (placeholders for now -- used once S3 integration begins)
+    # AWS (placeholders for now. Used once S3 integration begins)
     AWS_REGION = os.getenv("AWS_REGION", "eu-central-1")
     S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 
@@ -32,7 +34,6 @@ class ProductionConfig(BaseConfig):
 
 
 def get_config():
-    """Return the config class matching APP_ENV (default: development)."""
     env = os.getenv("APP_ENV", "development").lower()
     if env == "production":
         return ProductionConfig

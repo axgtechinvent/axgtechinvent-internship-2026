@@ -14,7 +14,7 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role_policy_attachment" "ec2_ssm_core" {
-  role       = module.ec2.iam_role_name # Modificat din aws_iam_role.app_ec2_role.name
+  role       = aws_iam_role.app_ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
@@ -36,9 +36,9 @@ data "aws_iam_policy_document" "ssm_team_access" {
   # document needs its own statement (the tag condition above cannot apply to
   # it). Without this, StartSession returns AccessDenied.
   statement {
-    sid     = "AllowSessionDocument"
-    effect  = "Allow"
-    actions = ["ssm:StartSession"]
+    sid       = "AllowSessionDocument"
+    effect    = "Allow"
+    actions   = ["ssm:StartSession"]
     resources = [
       "arn:aws:ssm:*::document/SSM-SessionManagerRunShell",
       "arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:document/SSM-SessionManagerRunShell",
@@ -163,7 +163,7 @@ resource "aws_ssm_document" "session_preferences" {
 
 output "ssm_connect_command" {
   description = "What each teammate runs to get a shell."
-  value       = "aws ssm start-session --target ${module.ec2.instance_id}"
+  value       = "aws ssm start-session --target ${aws_instance.app_server.id}"
 }
 
 output "ec2_operators_group" {
