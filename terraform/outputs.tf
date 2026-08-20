@@ -1,37 +1,39 @@
-# ------------------------------------------------------------------------------
-# EC2 OUTPUTS
-# ------------------------------------------------------------------------------
+#EC2 Outputs
 
-output "ec2_instance_id" {
+output "instance_id" {
   description = "ID-ul instantei EC2"
-  value       = module.ec2.instance_id
+  value       = aws_instance.app_server.id
 }
 
-output "ec2_public_ip" {
+output "public_ip" {
   description = "Adresa IP publica a instantei"
-  value       = module.ec2.public_ip
+  value       = aws_instance.app_server.public_ip
 }
 
-output "ec2_public_dns" {
+output "public_dns" {
   description = "Public DNS pentru instanta EC2"
-  value       = module.ec2.public_dns
+  value       = aws_instance.app_server.public_dns
 }
 
-# ------------------------------------------------------------------------------
-# S3 OUTPUTS
-# ------------------------------------------------------------------------------
+#S3 Outputs
 
 output "s3_bucket_name" {
   description = "Numele bucket-ului S3 creat"
-  value       = module.s3.bucket_id
+  value       = aws_s3_bucket.app_storage.id
 }
 
 output "s3_bucket_arn" {
   description = "ARN-ul bucket-ului S3"
-  value       = module.s3.bucket_arn
+  value       = aws_s3_bucket.app_storage.arn
 }
 
 output "s3_bucket_region" {
   description = "Regiunea AWS in care se afla bucket-ul"
-  value       = module.s3.bucket_region
+  value       = aws_s3_bucket.app_storage.region
+}
+
+
+output "ecr_repository_url" {
+  description = "URL-ul repository-ului ECR"
+  value       = module.ecr.repository_url
 }
