@@ -163,7 +163,7 @@ resource "aws_ssm_document" "session_preferences" {
 
 output "ssm_connect_command" {
   description = "What each teammate runs to get a shell."
-  value       = "aws ssm start-session --target ${modules.ec2_instance_id}"
+  value       = "aws ssm start-session --target ${module.ec2.instance_id}"
 }
 
 output "ec2_operators_group" {
