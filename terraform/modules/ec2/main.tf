@@ -71,6 +71,11 @@ resource "aws_iam_instance_profile" "app_profile" {
   role = aws_iam_role.app_ec2_role.name
 }
 
+resource "aws_iam_role_policy_attachment" "ec2_cloudwatch_logs" {
+  role       = aws_iam_role.app_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
 # Căutare dinamică pentru cel mai recent AMI de Amazon Linux 2023(resursa de tip data source)
 data "aws_ami" "amazon_linux_2023" {
   most_recent = true
