@@ -1,9 +1,38 @@
-﻿services:
+services:
   app:
     container_name: cloud-file-storage
     image: 230355214351.dkr.ecr.eu-central-1.amazonaws.com/myapp/ecr:test-dev
-    ports:
-      - "80:5000"
+    # No `ports:` mapping on purpose: the app is only reachable from other
+    # containers on the internal Docker network (as `app:5000`), not from
+    # the host. Nginx is the sole public entry point (see `nginx` service).
+    expose:
+      - "5000"
     restart: unless-stopped
     env_file:
       - .env
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  nginx:
+    container_name: nginx-proxy
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
