@@ -120,10 +120,12 @@ resource "aws_instance" "app_server" {
               chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
               # Install/upgrade Docker Buildx (AMI-ul vine cu o versiune veche,
-              # care nu suporta `docker compose build`)
-              BUILDX_URL=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest \
-                | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4)
-              curl -L "$BUILDX_URL" -o /usr/local/lib/docker/cli-plugins/docker-buildx
+              # care nu suporta `docker compose build`). Versiune fixata in loc
+              # de scraping pe API-ul GitHub, care putea intoarce mai multe
+              # URL-uri (checksum/attestation) si strica binarul descarcat.
+              BUILDX_VERSION=v0.19.2
+              curl -L "https://github.com/docker/buildx/releases/download/$${BUILDX_VERSION}/buildx-$${BUILDX_VERSION}.linux-amd64" \
+                -o /usr/local/lib/docker/cli-plugins/docker-buildx
               chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
 
               # Seed the compose file + nginx files the CI deploy step
