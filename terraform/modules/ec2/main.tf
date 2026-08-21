@@ -155,7 +155,7 @@ resource "aws_instance" "app_server" {
               services:
                 app:
                   container_name: cloud-file-storage
-                  image: 230355214351.dkr.ecr.eu-central-1.amazonaws.com/myapp/ecr:test-dev
+                  image: PLACEHOLDER
                   expose:
                     - "5000"
                   restart: unless-stopped
