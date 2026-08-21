@@ -95,10 +95,10 @@ data "aws_ami" "amazon_linux_2023" {
 # Crearea instantei EC2
 resource "aws_instance" "app_server" {
   ami                         = data.aws_ami.amazon_linux_2023.id
-  instance_type               = var.instance_type                   # Free tier eligibil
-  subnet_id                   = var.public_subnet_id    # Plasare în subnetul public
+  instance_type               = var.instance_type              # Free tier eligibil
+  subnet_id                   = var.public_subnet_id           # Plasare în subnetul public
   vpc_security_group_ids      = [aws_security_group.app_sg.id] # Atasare Security Group
-  associate_public_ip_address = true # Asigura un IP public
+  associate_public_ip_address = true                           # Asigura un IP public
   iam_instance_profile        = aws_iam_instance_profile.app_profile.name
 
   user_data = <<-EOF
@@ -119,18 +119,80 @@ resource "aws_instance" "app_server" {
                 -o /usr/local/lib/docker/cli-plugins/docker-compose
               chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
-              # Seed the compose file the CI deploy step (sed + docker compose up) expects
-              mkdir -p /home/ssm-user
+              # Install/upgrade Docker Buildx (AMI-ul vine cu o versiune veche,
+              # care nu suporta `docker compose build`)
+              BUILDX_URL=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest \
+                | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4)
+              curl -L "$BUILDX_URL" -o /usr/local/lib/docker/cli-plugins/docker-buildx
+              chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
+
+              # Seed the compose file + nginx files the CI deploy step
+              # (sed + docker compose up, in /home/ssm-user) expects
+              mkdir -p /home/ssm-user/nginx
+
+              cat > /home/ssm-user/nginx.conf <<'NGINXEOF'
+              server {
+                  listen 80;
+
+                  location / {
+                      proxy_pass http://app:5000;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto $scheme;
+                  }
+              }
+              NGINXEOF
+
+              cat > /home/ssm-user/nginx/Dockerfile <<'DOCKERFILEEOF'
+              FROM nginx:alpine
+              COPY nginx.conf /etc/nginx/conf.d/default.conf
+              DOCKERFILEEOF
+
               cat > /home/ssm-user/docker-compose.yaml <<'COMPOSE'
               services:
                 app:
-                  image: PLACEHOLDER
+                  container_name: cloud-file-storage
+                  image: 230355214351.dkr.ecr.eu-central-1.amazonaws.com/myapp/ecr:test-dev
+                  expose:
+                    - "5000"
                   restart: unless-stopped
-                  ports:
-                    - "80:5000"
                   env_file:
                     - /etc/app.env
+                  networks:
+                    - app-network
+                  healthcheck:
+                    test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\" || exit 1"]
+                    interval: 10s
+                    timeout: 5s
+                    retries: 5
+                    start_period: 15s
+
+                nginx:
+                  container_name: nginx-proxy
+                  build:
+                    context: .
+                    dockerfile: nginx/Dockerfile
+                  ports:
+                    - "80:80"
+                  restart: unless-stopped
+                  depends_on:
+                    app:
+                      condition: service_healthy
+                  networks:
+                    - app-network
+
+              networks:
+                app-network:
+                  driver: bridge
               COMPOSE
+
+              # Autentificare Docker la ECR (rol IAM al instantei)
+              aws ecr get-login-password --region ${var.bucket_region} \
+                | docker login --username AWS --password-stdin 230355214351.dkr.ecr.eu-central-1.amazonaws.com
+
+              cd /home/ssm-user
+              docker compose up -d --build
               EOF
 
   tags = {
